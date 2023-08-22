@@ -1,0 +1,34 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: circleci/openjdk:17-jdk-buster
+    working_directory: ~/app
+    steps:
+      - checkout
+      - run:
+          name: Install Maven 3.8.3
+          command: mvn clean install
+      - run:
+          name: Copy JAR file to EC2 instance
+          command: |
+            echo "$SSH_KEY" > admin-panel-ssh-key.pem
+            chmod 600 admin-panel-ssh-key.pem
+            scp -i admin-panel-ssh-key.pem target/*.jar ubuntu@52.214.98.80:/home/ubuntu/app.jar
+      - run:
+          name: Install dependencies and run application
+          command: |
+            ssh -i "admin-panel-ssh-key.pem" -o StrictHostKeyChecking=no ubuntu@52.214.98.80 \
+              sudo yum -y install java-17-openjdk
+              sudo pm2 start /home/ubuntu/app.jar --name spring-boot --watch -- --server.port=5000
+              sudo pm2 startup
+              sudo pm2 save
+
+workflows:
+  build-and-deploy:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: main

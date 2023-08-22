@@ -1,0 +1,35 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto17
+    commands:
+      - export PATH=$PATH:/usr/local/apache-maven/apache-maven-3.8.3/bin
+  pre_build:
+    commands:
+      - mvn clean install
+      #if you want to push Artifact into s3 uncomment
+      # - echo Logging in to Amazon ECR...
+      # - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com   
+  build:
+    commands:
+      - aws s3 cp target/*SNAPSHOT.jar s3://springbootapp12/app-SNAPSHOT.jar
+      # This is the revisioner for CodeDeploy 
+      # - aws deploy push --application-name springboot --description "This is a revision for my SpringBoot application " --ignore-hidden-files --s3-location s3://springbootapp12/deployment.zip --source target/*SNAPSHOT.jar
+
+      # - docker ps
+    #if you pushed to an s3, uncommment so you can use retrieve the .jar file 
+    # - aws s3 ls s3://springbootapp12
+      # - echo building a docker image
+      # - docker build -t $IMAGE_REPO_NAME .
+      # - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+      # - echo "build completed"
+      
+  # post_build:
+  #   commands:
+  #     - echo Pushing the Docker image...
+  #     - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+
+
+  
